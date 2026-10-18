@@ -1,0 +1,137 @@
+// Prisma schema for PostgreSQL in Docker Compose deployment
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  name            String
+  password        String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  memberships     TeamMembership[]
+  createdItems    WorkItem[]       @relation("CreatedBy")
+  assignedItems   WorkItem[]       @relation("AssignedTo")
+  comments        Comment[]
+  activityEvents  ActivityEvent[]
+  idempotencyKeys IdempotencyKey[]
+}
+
+model Team {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  memberships TeamMembership[]
+  workItems   WorkItem[]
+}
+
+model TeamMembership {
+  id        String   @id @default(cuid())
+  userId    String
+  teamId    String
+  role      String   // VIEWER, MEMBER, LEAD, ADMIN
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+  @@index([userId])
+  @@index([teamId])
+}
+
+model WorkItem {
+  id          String          @id @default(cuid())
+  title       String
+  description String
+  type        String          // INCIDENT, CUSTOMER_ISSUE, PAYMENT, COMPLIANCE, TASK
+  priority    String          // LOW, MEDIUM, HIGH, URGENT
+  status      String          // OPEN, IN_PROGRESS, AWAITING_APPROVAL, RESOLVED, CLOSED
+  teamId      String
+  assigneeId  String?
+  createdById String
+  dueDate     DateTime?
+  version     Int             @default(1) // Optimistic Locking Version
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  team        Team            @relation(fields: [teamId], references: [id])
+  assignee    User?           @relation("AssignedTo", fields: [assigneeId], references: [id])
+  createdBy   User            @relation("CreatedBy", fields: [createdById], references: [id])
+  comments    Comment[]
+  activityEvents ActivityEvent[]
+
+  @@index([teamId, status])
+  @@index([assigneeId])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+model ActivityEvent {
+  id         String   @id @default(cuid())
+  workItemId String
+  userId     String
+  eventType  String   // CREATED, CLAIMED, ASSIGNED, STATUS_TRANSITION, PRIORITY_CHANGED, EDITED, COMMENT_ADDED
+  fromState  String?
+  toState    String?
+  details    String   // JSON payload string
+  createdAt  DateTime @default(now())
+
+  workItem   WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([workItemId, createdAt])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  workItemId String
+  userId     String
+  content    String
+  createdAt  DateTime @default(now())
+
+  workItem   WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([workItemId])
+}
+
+model IdempotencyKey {
+  key          String    @id
+  userId       String
+  requestPath  String
+  requestHash  String
+  statusCode   Int?
+  responseBody String?   // JSON response string
+  lockedAt     DateTime?
+  createdAt    DateTime  @default(now())
+
+  user         User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model OutboxJob {
+  id          String   @id @default(cuid())
+  jobType     String   // NOTIFICATION_ASSIGNEE, NOTIFICATION_LEAD_APPROVAL, WORKFLOW_AUDIT
+  payload     String   // JSON string
+  status      String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(5)
+  nextRunAt   DateTime @default(now())
+  lastError   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, nextRunAt])
+}
