@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: newtonite_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: newtonite_ops
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d newtonite_ops"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: newtonite_backend
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/newtonite_ops"
+      JWT_SECRET: "super-secret-newtonite-operations-key-2026"
+      JWT_EXPIRES_IN: "7d"
+      WORKER_POLL_INTERVAL_MS: 2000
+      WORKER_BATCH_SIZE: 10
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: newtonite_frontend
+    restart: always
+    ports:
+      - "5173:80"
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+    driver: local
