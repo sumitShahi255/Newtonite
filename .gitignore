@@ -1,16 +1,59 @@
+# Dependencies
 node_modules/
+/.pnp
+.pnp.js
+
+# Production / Build outputs
 dist/
 build/
+out/
+
+# Environment files (keep .env.example safe)
 .env
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+.env.*
+!.env.example
+
+# Database & SQLite files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+*.sqlite3
 dev.db
 dev.db-journal
 test.db
 test.db-journal
+
+# Prisma generated files
+.prisma/
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 .DS_Store
 Thumbs.db
-coverage/
-.prisma/client
+
+# Temporary / Cache
+.eslintcache
+.cache/
+tmp/
+temp/
