@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
-  Layers,
   ShieldCheck,
   UserCheck,
   PlusCircle,
@@ -9,6 +8,7 @@ import {
   LogOut,
   ChevronDown,
 } from 'lucide-react';
+import { NewtoniteLogo } from './NewtoniteLogo';
 
 interface NavbarProps {
   onOpenCreateModal: () => void;
@@ -53,20 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCreateModal, onOpenOutboxM
       >
         {/* Brand & System Status */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 10,
-              background: 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)',
-            }}
-          >
-            <Layers size={20} color="#fff" />
-          </div>
+          <NewtoniteLogo size={38} />
 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
